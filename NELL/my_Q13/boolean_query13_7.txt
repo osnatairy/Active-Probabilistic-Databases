@@ -1,0 +1,5 @@
+num_of_clauses: 1
+num_of_concepts: 2
+isReadOne: True
+concept_name: x100019985, x160057674
+(x160057674 & x100019985)

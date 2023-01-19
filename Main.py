@@ -1,13 +1,13 @@
 import concurrent
 
 from sklearn.ensemble import RandomForestClassifier
-
+import copy
 from ActivePDB_Evaluation import ActivePDB_Evaluation
 from BooleanEvaluationModule import *
 from KnownProbesRepository import KnownProbesRepository
 from LearnerModule import LearnerModule, LC, LAL, Learn_Once, No_Learning
 from ProbeSelectorModule import SimpleMultiplicationWithIntentionalFading, UtilityOnly
-from Scenario import Scenarios, H1B, H1B_S3, TPCH_Q8
+from Scenario import Scenarios, H1B, H1B_S3, TPCH_Q8, NELL
 
 
 def chunkify(lst, n):
@@ -122,18 +122,22 @@ if __name__ == '__main__':
     RO_Algorithm = RO()
     Q_Value_Algorithm = Q_Value()
     Heuristic_Allen = General()
-    
-    scen=Scenarios(TPCH_Q8(tree_number=8))
+
+    Q_Value_Algorithm = Q_Value()
+    scen = Scenarios(NELL('Q13'))
+
     initial_idx = randomize_known_probes(scen, 80)
     scen.experiment_init(initial_idx)
-    repo = KnownProbesRepository(X_train=(scen.get_X())[initial_idx].astype(int), y_train= (scen.get_y())[initial_idx].astype(int))
+    repo = KnownProbesRepository(X_train=(scen.get_X())[initial_idx].astype(int),
+                                  y_train=(scen.get_y())[initial_idx].astype(int))
 
-    variant_LC_plus_CtU()
-    Online_variant(repo,scen)
-    Offline_Variant(repo,scen)
-    Greedy_Variant(repo,scen)
-    variant_LAL_plus_CtU(repo,scen)
-    EP_Variant(repo,scen)
+
+    variant_LAL_plus_CtU(copy.deepcopy(repo),copy.deepcopy(scen))
+    Online_variant(copy.deepcopy(repo),copy.deepcopy(scen))
+    Offline_Variant(copy.deepcopy(repo),copy.deepcopy(scen))
+    Greedy_Variant(copy.deepcopy(repo),copy.deepcopy(scen))
+    EP_Variant(copy.deepcopy(repo),copy.deepcopy(scen))
+    variant_LC_plus_CtU(copy.deepcopy(repo),copy.deepcopy(scen))
 
 
 

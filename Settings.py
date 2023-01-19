@@ -183,3 +183,107 @@ class DataFrameImputer(TransformerMixin):
 
     def transform(self, X, y=None):
         return X.fillna(self.fill)
+
+
+class NELL(Setting):
+    def read_dataset(self):
+        path = 'NELL'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        dataset_str = str(path) + "/new_dataset.csv"
+        self.dataset = pd.read_csv(dataset_str)
+
+    def __init__(self,query):
+        self.read_dataset()
+        self.X, self.y = self.dataset.iloc[:, :-1], self.dataset.iloc[:, -1]
+        self.query=query
+        self.preprocess_data()
+        self.dict_variables = dict(zip(list(self.X['Transaction_id'].values), list(self.y)))
+        self.feature_names = list(self.X.columns)
+        self.X, self.y = self.X.to_numpy(), self.y.to_numpy()
+        self.ls_dnf, self.ls_cnf = self.get_Boolean_Provenance()
+
+    def preprocess_data(self):
+        lb_make = LabelEncoder()
+        self.X = self.X.drop(columns=['id'])
+        self.X = self.X.drop(columns=['id_gen'])
+
+        self.variables_real_probabilities = dict(
+            zip(list(self.X['Transaction_id'].values), list(self.X['probability']).copy()))
+        self.X = self.X.drop(columns=['probability'])
+        self.X['entity'] = self.X['entity'].astype(str).str.replace(" ", "").astype(str)
+        self.X['relation'] = self.X['relation'].astype(str).str.replace(" ", "").astype(str)
+
+        self.X['value'] = self.X['value'].astype(str).str.replace(" ", "").astype(str)
+        self.X['source'] = self.X['source'].astype(str).str.replace(" ", "").astype(str)
+
+        self.X['action'] = self.X['action'].astype(str).str.replace(" ", "").astype(str)
+        self.X['iteration'] = self.X['iteration'].astype(str).str.replace(" ", "").astype(str)
+        self.X['entity_words'] = self.X['entity_words'].astype(str).str.replace(" ", "").astype(str)
+        self.X['value_word'] = self.X['value_word'].astype(str).str.replace(" ", "").astype(str)
+        self.X['entity_letters'] = self.X['entity_letters'].astype(str).str.replace(" ", "").astype(str)
+        self.X['value_letters'] = self.X['value_letters'].astype(str).str.replace(" ", "").astype(str)
+        self.X['has_probability'] = self.X['has_probability'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_generalizations'] = self.X['e_generalizations'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_instancetype'] = self.X['e_instancetype'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_populate'] = self.X['e_populate'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_antireflexive'] = self.X['e_antireflexive'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_antisymmetric'] = self.X['e_antisymmetric'].astype(str).str.replace(" ", "").astype(str)
+        self.X['e_range'] = self.X['e_range'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_generalizations'] = self.X['v_generalizations'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_instancetype'] = self.X['v_instancetype'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_populate'] = self.X['v_populate'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_antireflexive'] = self.X['v_antireflexive'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_antisymmetric'] = self.X['v_antisymmetric'].astype(str).str.replace(" ", "").astype(str)
+        self.X['v_range'] = self.X['v_range'].astype(str).str.replace(" ", "").astype(str)
+
+
+
+
+        self.X['entity'] = lb_make.fit_transform(self.X["entity"])
+        self.X['relation'] = lb_make.fit_transform(self.X["relation"])
+        self.X['value'] = lb_make.fit_transform(self.X["value"])
+        self.X['source'] = lb_make.fit_transform(self.X["source"])
+        self.X['action'] = lb_make.fit_transform(self.X["action"])
+        self.X['iteration'] = lb_make.fit_transform(self.X["iteration"])
+        self.X['entity_words'] = lb_make.fit_transform(self.X["entity_words"])
+        self.X['value_letters'] = lb_make.fit_transform(self.X["value_letters"])
+        self.X['has_probability'] = lb_make.fit_transform(self.X["has_probability"])
+        self.X['e_generalizations'] = lb_make.fit_transform(self.X["e_generalizations"])
+        self.X['e_instancetype'] = lb_make.fit_transform(self.X["e_instancetype"])
+        self.X['e_populate'] = lb_make.fit_transform(self.X["e_populate"])
+        self.X['e_antireflexive'] = lb_make.fit_transform(self.X["e_antireflexive"])
+        self.X['e_antisymmetric'] = lb_make.fit_transform(self.X["e_antisymmetric"])
+        self.X['e_range'] = lb_make.fit_transform(self.X["e_range"])
+        self.X['v_generalizations'] = lb_make.fit_transform(self.X["v_generalizations"])
+        self.X['v_instancetype'] = lb_make.fit_transform(self.X["v_instancetype"])
+        self.X['v_populate'] = lb_make.fit_transform(self.X["v_populate"])
+        self.X['v_antireflexive'] = lb_make.fit_transform(self.X["v_antireflexive"])
+        self.X['v_antisymmetric'] = lb_make.fit_transform(self.X["v_antisymmetric"])
+        self.X['v_range'] = lb_make.fit_transform(self.X["v_range"])
+
+
+        self.dict_variables = dict(zip(list(self.X['Transaction_id'].values), list(self.y)))
+        transactions = pd.DataFrame(self.X['Transaction_id']).astype(int)
+
+    def get_Boolean_Provenance(self):
+        path = "NELL"
+        text_file_dnf = open(str(path) + r"\UseCases_Expressions_NELL_{}_Dnf.txt".format(self.query), "r")
+        lines_dnf = text_file_dnf.readlines()
+
+        text_file_cnf = open(str(path) + r"\UseCases_Expressions_NELL_{}_Cnf.txt".format(self.query), "r")
+
+        lines_cnf = text_file_cnf.readlines()
+
+        expressions_dnf = []
+        expressions_cnf = []
+
+        for line in lines_dnf:
+            dnf_form = algebra.parse(line)
+            expressions_dnf.append(dnf_form)
+
+        for line in lines_cnf:
+            cnf_form = algebra.parse(line)
+            expressions_cnf.append(cnf_form)
+
+        return expressions_dnf, expressions_cnf
